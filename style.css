@@ -1,0 +1,124 @@
+.shown {
+  display: block;
+}
+.hidden {
+  display: none;
+}
+.cards-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.cards-container .myimg {
+  height: 10px;
+  width: 10px;
+  display: inline-block;
+  cursor: pointer;
+}
+
+img {
+  height: 80px;
+  width: 55px;
+  object-fit: cover;
+  border: 1px solid black;
+  margin: 2px;
+  cursor: pointer;
+}
+
+.dragging {
+  opacity: 0.5;
+}
+
+div#divUsersInLobby {
+  margin: 5px;
+  padding: 5px;
+  border: 1px solid black;
+  border-radius: 5px;
+  cursor: pointer;
+  background-color: #eee;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+div#divUsersInLobby p:hover {
+  background-color: #d55d5d;
+}
+
+.card-display {
+  width: 400px;
+  height: 200px;
+  background-color: rgb(237, 222, 222);
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.9;
+  border: 2px solid black;
+  margin-top: 20px;
+}
+
+#backcard {
+  position: absolute;
+  left: 100px;
+  top: 50px;
+  background-image: image("back-card.jpg");
+}
+
+#pLoginMessage {
+  color: yellow;
+  font-weight: bold;
+}
+
+.user-card {
+  width: 500px;
+  height: 90px;
+  border: 3px red solid;
+}
+
+#divDeck {
+  background-color: #d55d5d;
+  width: 60px;
+  height: 80px;
+  border: 1px solid black;
+}
+
+#divKopa {
+  width: 60px;
+  height: 80px;
+  background-image: url(/backcard.jpg);
+  background-size: cover;
+  object-fit: cover;
+  border: 1px solid black;
+}
+
+#divGame2 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-60%, -60%);
+  width: 400px;
+}
+#container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-60%, -60%);
+}
+
+#btnLeaveGame {
+  position: fixed;
+  bottom: 10px;
+  left: 10px; /* מרחק מצד שמאל של המסך */
+  transform: translateX(0);
+  display: none;
+}
+#rightalign {
+  position: absolute;
+  text-align: left;
+  vertical-align: top;
+  display: none;
+}

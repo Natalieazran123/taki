@@ -1,0 +1,421 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="client_tools.js"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" type="image/x-icon" href="data:image/x-icon;">
+        <link rel="stylesheet" type="text/css" href="style.css">
+        <!--מעלים את favifon-->
+        <script>
+            let divLogin,divLobby,divGame2;
+            let username,password;
+            let txtPassword,txtUsername;
+            let pLoginMessage;
+            let divUsersInLobby;
+            let lblGameId;
+            let btnLeaveGame;
+            let dropzone;
+            let btnlastcard;
+            let divDeck;
+            let userCard;
+            let divKopa;
+            let gameId;
+            let cardDeck = [];
+            let divUser;
+
+
+          
+
+    function init(){
+      txtUsername = document.getElementById('txtUsername');
+      txtPassword = document.getElementById('txtPassword');
+      divLogin= document.getElementById('divLogin');
+      divLobby= document.getElementById('divLobby');
+      divUsersInLobby= document.getElementById('divUsersInLobby');
+      divGame2 = document.getElementById('divGame2');
+      lblGameId = document.getElementById('lblGameId');
+      pLoginMessage= document.getElementById('pLoginMessage');
+      btnLeaveGame= document.getElementById('btnLeaveGame');
+      myImg = document.getElementById("myImg");
+      btnlastcard= document.getElementById ("btnLastCard");
+      divDeck = document.getElementById ("divDeck");
+      userCard = document.getElementById("userCard");
+      divKopa = document.getElementById("divKopa");
+
+}
+
+
+    function btnLoginOrSignupClicked(loginOrsignup){
+      username = txtUsername.value;
+      password = txtPassword.value;
+      if(!username || !password) return;
+        //lock the button
+      let elements = document.getElementsByClassName('lock');
+        for(let e in elements){
+          e.disabled= true;
+      }
+    
+      pLoginMessage.innerHTML = "";  
+
+      sendHttpGetRequest ('api/' + loginOrsignup+ '?username='+ username+ '&password=' + password, (response)=>{
+        console.log(response);
+          // unlock the buttons
+        for (let e in elements){
+            e.disabled= false;
+        }
+        if (response == "ok") {
+          document.getElementById ('btnLeaveGame').style.display = "block";
+          document.getElementById ('rightalign').style.display = "block";
+          show(divLobby);
+          getLobby();
+                 
+        }else if(response == "invalid"){
+          pLoginMessage.innerHTML= "Invalid username or password.";
+          document.getElementById ("divusersinlobby").style.display = "none";
+        }else if(response == "taken"){
+          pLoginMessage.innerHTML = "This username is already taken.";
+            document.getElementById("divusersinlobby").style.display = "none";
+        }else{
+          pLoginInfo.innerHTML = "Sorry, something went wrong. Please try again later.";
+        }
+    });
+}
+
+
+
+    function btnStartGame(){
+      let players= 2; //בשלב זה האפליקציה תומכת רק ב-2 שחקנים
+      if(!username || !password) return;          
+      sendHttpGetRequest('api/get_hand?username='+ username + '&password=' + password + '&gameid=' + gameId,(response)=>{
+        let hand = JSON.parse(response);
+      for(let i=0;i<hand.length;i++){
+        let img = document.createElement ("img");
+        removeAllChildNodes(userCard);
+        img.src = hand[i] + ".jpg";
+        img.id = i; 
+        img.onclick= ()=>{
+        cardclicked(img.id,hand[i]);
+      }
+        userCard.appendChild(img);
+        console.log (hand[i]);
+     
+      }
+
+      alert('error,try again');
+        
+   });     
+                    
+}
+
+    function getLobby(){
+      if(!username || !password) return; 
+      sendHttpGetRequest('api/get_lobby?username='+ username + '&password=' + password,(response)=>{
+      let divUsersInLobbyArr= JSON.parse(response);
+      removeAllChildNodes(divUsersInLobby);
+      let existsInList = false;
+      for(let i=0;i<divUsersInLobbyArr.length;i++){
+        if(divUsersInLobbyArr[i].username == username){
+            existsInList = true;
+            continue;
+       } 
+       
+          let p = document.createElement('p');
+          p.innerHTML = divUsersInLobbyArr[i].username;
+          divUsersInLobby.appendChild(p);
+          p.onclick = (event)=>{
+            let partner = event.target.innerHTML;
+        sendHttpGetRequest('api/start_game?username='+username+'&password='+password+'&partner='+partner, (response)=>{
+            if(response == "error"){
+                alert("error, try again");
+                }
+           });
+
+         };
+      }
+
+          if(existsInList){
+            setTimeout(getLobby, 500);
+          }else{
+         //what is my game id ??
+        sendHttpGetRequest('api/get_game_status?username='+username+'&password='+password, (response)=>{
+          if(response){
+            gameId = parseInt(response);
+            show(divGame2);
+            render();
+
+        sendHttpGetRequest('api/get_cards?username=' + username + '&password='+ password,(response)=>{
+              if(response !== "error"){
+                let cards= JSON.parse(response);
+                for(let i=0; i<cards.length; i++){
+                  cardDeck.push(cards[i]);
+                  
+                }
+                
+                let firstCard = document.createElement('img');
+                  firstCard.src = cardDeck[0] + ".jpg"
+                  cardDeck.pop();
+                  divDeck.appendChild(firstCard);
+                
+            }
+      });
+        
+
+        sendHttpGetRequest('api/get_hand?username='+ username + '&password=' + password ,(response)=>{
+               let hand = JSON.parse(response);
+               for(let i=0;i<hand.length;i++){
+                  let img = document.createElement ("img");
+                  img.src = hand[i] + ".jpg";
+                  img.id = i; 
+                  img.onclick= ()=>{
+                  cardclicked(img.id,hand[i]);
+                }
+                  userCard.appendChild(img);
+                }
+            });    
+         
+          }
+      });
+
+     }
+  });
+}
+    function getGameStatus(){
+        sendHttpGetRequest('api/get_game_status?username='+username+'&password='+password+'&id='+gameId,(response)=>{
+          let gameStatus = JSON.parse(response);
+          if(gameStatus.active){
+            for(let i=0;i<45;i++){
+              let deckStatus = gameStatus.divKopa[i];
+              if (deckStatus == 0 ){
+                divDeck[i].innerHTML = "";
+              }else if (deckStatus == 1){
+                divDeck[i].innerHTML = '<img src = ".jpg" />';
+              }
+
+             }
+            setTimeout (getGameStatus,500);
+          }else{
+            show(divLobby);
+            getLobby;
+          }
+      });
+
+}
+
+
+    function render(){
+    //get last card
+        sendHttpGetRequest('api/get_last_card?username=' + username + '&password=' + password, (response) => {
+          if(response !== "error"){
+            let cardLast = response;
+            let firstCard = document.createElement('img');
+            removeAllChildNodes(divDeck);
+            cardLast = cardLast.replaceAll('%','');
+            divDeck.appendChild(firstCard);
+            setTimeout(render,1000);
+          }
+        });
+        //show last card
+        setTimeout(render,1000);
+  }
+
+
+    function btnLastCard() {
+      //check last card
+      username = txtUsername.value;
+      password = txtPassword.value;
+      if(!username || !password) return;
+      let elements = document.getElementsByClassName("lock");
+        for (let e of elements) {
+        e.disabled = true;
+    }
+
+        sendHttpGetRequest('api/check_last_card?username=' + username + '&password=' + password, (response) => {
+          for (let e of elements) {
+           e.disabled = false;
+        }
+
+          if (response == "ok") {
+          let img = document.createElement("img");
+          let cardImages = ["plus2-red.jpg", "4-blue.jpg", "1-blue.jpg", "8-blue.jpg", "3-blue.jpg","9-red.jpg","5-green.jpg","3-yellow.jpg","7-green.jpg","6-green.jpg","stopred.jpg","9-blue.jpg","6-yellow.jpg","8-red.jpg","7-red.jpg","9-yellow.jpg","3-blue.jpg","5-yellow.jpg","1-red.jpg","4-blue","stop-red.jpg",
+            "plus2-blue.jpg","4-green.jpg","8-red.jpg","6-green.jpg","7-green.jpg","7-blue.jpg"];
+
+          for(let i=0; i<8; i++){
+            let img= document.createElement("img");
+            img.id = i; 
+            img.onclick= ()=>{
+            cardclicked(img.id,hand[i]);
+        }
+            let randomIndex = Math.floor(Math.random() * cardImages.length);
+            img.src = cardImages[randomIndex];
+            userCard.appendChild(img);
+          }
+        }   
+      
+    });
+ }
+
+
+    function btnLeaveGameClicked(){
+      // if the player want to leave game
+        username = txtUsername.value;
+        password = txtPassword.value;
+        if(!username || !password) return;
+        let elements = document.getElementsByClassName("lock");
+          for (let e of elements) {
+            e.disabled = true;
+        }
+        
+        if (confirm("Are you sure you want to leave the game?")) {
+            show(divLogin);
+            document.querySelector('.divlobby').style.display = 'none';
+            document.getElementById("btnLeaveGame").style.display = "block";
+            document.getElementById ("btnlastcard").style.display = "block";
+            document.getElementById ("btnStartGame1").style.display = "block";
+            pLoginMessage.innerHTML = "you need to login again,Please refresh the page" ;
+        
+         } else {
+          console.log("Cancelled");
+        }
+
+        sendHttpGetRequest('api/leave_game?username=' + username + '&password=' + password, (response) => {
+          if (response == "ok") {
+            show(divLogin);
+            
+
+          } else {
+            res.writeHead(200,{'Content-type':'text/plain'});
+            res.end('Cancelled');
+            return;
+        }
+    });
+}
+
+        
+    function show(element){
+      let shown = document.getElementsByClassName('shown');
+      if(shown.length == 1){
+          shown[0].classList.add('hidden');
+          shown[0].classList.remove('shown');
+      }
+      element.classList.add('shown');
+      element.classList.remove('hidden'); 
+  }
+
+/*
+    function onKeyUp(event){
+      if(event.keyCode == 13){
+          if(event.target == txtUsername){
+             txtPassword.focus();
+          }else if(event.target == txtPassword){
+              btnLoginOrSignupClicked('login');
+          }
+      }
+    }
+*/
+
+    function removeAllChildNodes(node){
+      while(node.firstChild){
+        node.removeChild(node.firstChild);
+      }
+  }
+
+    function check(node){
+      if(node.firstChild){
+        return true;
+      }else{
+        return false;
+      }
+    }
+       
+
+  
+    function cardclicked(id, cardToSend){
+      let card = document.getElementById (id);
+      let cardNumber = getCardNumber(cardToSend);
+      let cardColor = getCardColor(cardToSend);
+      //לבדוק אם מהלך חוקי, במידה וכן להמשיך UPDATE LAST CARD
+      //זאת פונקציה לבדיקת מהלך חוקי
+      sendHttpGetRequest('api/check_move?username=' + username + '&password=' + password +'&cardnumber=' + cardNumber + '&cardcolor=' + cardColor, (response) => {
+        if (response == "ok") {
+      sendHttpGetRequest('api/update_last_card?username=' + username + '&password=' + password +'&cardnumber=' + cardNumber + '&cardcolor=' + cardColor, (response) => {
+        if (response == "ok") {
+            removeAllChildNodes (divDeck);
+            divDeck.appendChild(card);
+            render();
+            } else {
+
+              return;
+            }
+          });
+        }else{
+
+          return;
+        }
+      });
+ }
+
+    function getCardNumber(cardNum){
+      return cardNum.substring(0,cardNum.indexOf("-"));
+
+}
+
+    function getCardColor(cardColor){
+      return cardColor.substring (cardColor.indexOf("-") +1,cardColor.length);
+}
+
+    </script>
+    </head>
+    <body onload="init()" style="background-image: url('reka.jpg'); background-size: cover;">
+        <h2 style="text-align: center; color: rgb(61, 58, 58); margin-left: 2%;">Welcome to taki game</h2>
+        <div id="divLogin" class="shown" >
+
+            <h3 style="text-align: center; margin-left: 2%; font-family: 'Courier New', Courier, monospace;">Registered User? login</h3>
+            <h3 style="text-align: center; margin-left: 2%; font-family: 'Courier New', Courier, monospace;"> New User? sign up</h3>
+            <p style="text-align: center;" > username:<input style="margin-left: 0.5%; " autofocus class="lock" type="text" id="txtUsername" /></p>
+            <p style="text-align: center;" > password:<input style="margin-left: 0.5%; " class="lock" type="password" id="txtPassword"/></p>
+            <p style="text-align: center;" > <button style="margin-left: 3%; "  10px; class="lock"  onclick="btnLoginOrSignupClicked('login')">login</button><button style="margin-left: 1%;" class="lock" onclick="btnLoginOrSignupClicked('sign_up')">signup</button></p>
+            <p style =  "align-items: center;" id="pLoginMessage" ></p>
+            
+        </div>
+        <div id="container">
+
+        <div id="divLobby" class="hidden" >
+          <div class = "divlobby "  id = "divUsersInLobby"></div>     
+        </div>
+
+        <div id="divGame2" class ="hidden">
+          <p id="lblGameId"></p>  
+          <div >
+              <button id = "btnStartGame1" style="margin-bottom: 10px; "  onclick = "btnStartGame()">start game </button>
+          </div>
+          <div >
+              <button id = "btnlastcard" style="margin-bottom: 10px; "  onclick="btnLastCard()">last Card! </button>
+          </div>
+          <div class="user-card" id="userCard" ></div>
+          <div>
+            <div id = "divDeck" ></div>
+            <div id="divKopa"></div>
+          </div>
+        </div> 
+      </div>
+      
+      <div style = "position: fixed; bottom: 10px; left: 10px;">
+        <button id = "btnLeaveGame" onclick = "btnLeaveGameClicked()">leave game</button>
+      </div>
+      <div id="rightalign">
+        <h3 style="text-decoration: underline; ">Some Rules...</h3>
+      <p ><small>Each player must place a card of the same color or shape as the top card in the game stack.</br> Special cards can change the direction of the game,</br>  skip a player's turn, force other players to draw cards from the deck,</br> change the color, and get rid of multiple cards together.
+        </small>
+      </p>
+         <h3 style="text-decoration: underline;"> What is the goal?</h3>
+      <p><small>To get rid of all the cards in hand. </small>
+      </p>
+         <h3 style="text-decoration: underline;">Who is the winner?</h3>
+      <p><small> The player who gets rid of all the cards in their hand first is the winner of the game.</small>
+      </p>
+      </div>
+
+      </script>
+    </head>
+</html>
